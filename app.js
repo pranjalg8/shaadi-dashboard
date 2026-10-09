@@ -53,7 +53,7 @@ async function listAll(collection) {
 async function load() {
   show($("derr"), false);
   try {
-    const [p, t] = await Promise.all([api("GET", "/collections/plan/items/main"), listAll("tasks")]);
+    const [p, t] = await Promise.all([api("GET", "/collections/shaadi_plan/items/main"), listAll("shaadi_tasks")]);
     plan = p.data; tasks = t.map((x) => x.data);
     renderAll();
   } catch (e) {
@@ -61,7 +61,7 @@ async function load() {
   }
 }
 async function saveTask(t) {
-  try { await api("PUT", `/collections/tasks/items/${encodeURIComponent(t.id)}`, t); }
+  try { await api("PUT", `/collections/shaadi_tasks/items/${encodeURIComponent(t.id)}`, t); }
   catch (e) { $("derr").textContent = "Could not save: " + e.message; show($("derr"), true); await load(); }
 }
 
