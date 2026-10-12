@@ -54,8 +54,11 @@ async function load() {
   show($("derr"), false);
   try {
     const [p, t] = await Promise.all([api("GET", "/collections/shaadi_plan/items/main"), listAll("shaadi_tasks")]);
-    plan = p.data; tasks = t.map((x) => x.data);
+    plan = p.data;
+    if (!plan || !Array.isArray(plan.days) || !plan.stay) throw new Error("the plan item is incomplete (keys: " + Object.keys(plan || {}).join(", ") + ")");
+    tasks = t.map((x) => ({ owner: "Unassigned", due: "2027-02-13", status: "todo", event: "General", ...x.data }));
     renderAll();
+    $("status").textContent = `Loaded ${tasks.length} tasks and ${plan.days.length} days.`;
   } catch (e) {
     $("derr").textContent = "Could not load the plan: " + e.message; show($("derr"), true);
   }
