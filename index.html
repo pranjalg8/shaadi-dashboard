@@ -109,26 +109,26 @@ input{width:100%;min-height:48px;padding:0 12px;border:1px solid var(--line);bor
 <main>
 <section id="login" class="login" hidden>
   <h1 class="brand" style="font-size:2rem">Shaadi Dashboard</h1>
-  <p class="sub">Family sign-in</p>
+  <p data-i18n="signInTitle" class="sub">Family sign-in</p>
   <form id="lf" class="card">
-    <label for="em">Email</label><input id="em" type="email" autocomplete="username" required>
-    <label for="pw">Password</label><input id="pw" type="password" autocomplete="current-password" required>
-    <div id="np" hidden><label for="pw2">Choose a new password (8+ characters)</label><input id="pw2" type="password" autocomplete="new-password" minlength="8"></div>
+    <label data-i18n="email" for="em">Email</label><input id="em" type="email" autocomplete="username" required>
+    <label data-i18n="password" for="pw">Password</label><input id="pw" type="password" autocomplete="current-password" required>
+    <div id="np" hidden><label data-i18n="newPw" for="pw2">Choose a new password (8+ characters)</label><input id="pw2" type="password" autocomplete="new-password" minlength="8"></div>
     <p class="err" id="lerr" role="alert" hidden></p>
-    <p><button class="btn primary" id="lb" style="width:100%">Sign in</button></p>
+    <p><button class="btn primary" id="lb" style="width:100%" data-i18n="signIn">Sign in</button></p>
   </form>
 </section>
 
 <section id="app" hidden>
   <div class="top">
     <div><div class="brand">Shaadi</div><div class="sub small">13–15 Feb 2027</div></div>
-    <div class="row"><button class="btn small" id="edit">Edit</button><button class="btn small" id="out">Sign out</button></div>
+    <div class="row"><button class="btn small" id="lang" lang="hi">हिन्दी</button><button class="btn small" id="edit" data-i18n="edit">Edit</button><button class="btn small" id="out" data-i18n="signOut">Sign out</button></div>
   </div>
   <form id="pinf" class="card" hidden>
-    <label for="pin">Enter the PIN to edit tasks</label>
+    <label data-i18n="pinPrompt" for="pin">Enter the PIN to edit tasks</label>
     <input id="pin" inputmode="numeric" autocomplete="off" maxlength="8">
-    <p class="err" id="perr" hidden>That PIN is not right.</p>
-    <p><button class="btn primary">Unlock editing</button> <button type="button" class="btn" id="pinx">Cancel</button></p>
+    <p data-i18n="pinBad" class="err" id="perr" hidden>That PIN is not right.</p>
+    <p><button class="btn primary" data-i18n="unlock">Unlock editing</button> <button type="button" class="btn" id="pinx" data-i18n="cancel">Cancel</button></p>
   </form>
   <p class="err" id="derr" role="alert" hidden></p>
   <div id="view"></div>
@@ -136,10 +136,10 @@ input{width:100%;min-height:48px;padding:0 12px;border:1px solid var(--line);bor
 </section>
 </main>
 <nav id="nav" aria-label="Sections" hidden>
-  <button data-tab="home"><span class="ic" aria-hidden="true">⌂</span>Home</button>
-  <button data-tab="schedule"><span class="ic" aria-hidden="true">▦</span>Schedule</button>
-  <button data-tab="stay"><span class="ic" aria-hidden="true">☾</span>Stay</button>
-  <button data-tab="tasks"><span class="ic" aria-hidden="true">✓</span>Tasks</button>
+  <button data-tab="home"><span class="ic" aria-hidden="true">⌂</span><span data-i18n="home">Home</span></button>
+  <button data-tab="schedule"><span class="ic" aria-hidden="true">▦</span><span data-i18n="schedule">Schedule</span></button>
+  <button data-tab="stay"><span class="ic" aria-hidden="true">☾</span><span data-i18n="stay">Stay</span></button>
+  <button data-tab="tasks"><span class="ic" aria-hidden="true">✓</span><span data-i18n="tasks">Tasks</span></button>
 </nav>
 <script src="https://cdn.jsdelivr.net/npm/amazon-cognito-identity-js@6.3.12/dist/amazon-cognito-identity.min.js"></script>
 <script src="config.js"></script><script src="app.js"></script>
