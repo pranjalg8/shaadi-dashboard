@@ -87,6 +87,8 @@ select{min-height:44px;padding:0 12px;border:1px solid var(--line);border-radius
 .nights .total b{color:var(--accent)}
 ul.clean{margin:8px 0 0;padding-left:20px}ul.clean li{margin:6px 0}
 
+.qty{flex:none;text-align:center;min-width:58px}.qty b{display:block;font-family:var(--display);font-size:1.5rem;line-height:1.1}.qty span{font-size:.75rem;color:var(--mut)}
+input[type=search]{-webkit-appearance:none;appearance:none}
 /* nav */
 nav{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);z-index:5}
 nav button{flex:1;min-height:60px;border:0;background:none;font-weight:600;color:var(--mut);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:.8rem}
@@ -139,6 +141,7 @@ input{width:100%;min-height:48px;padding:0 12px;border:1px solid var(--line);bor
   <button data-tab="home"><span class="ic" aria-hidden="true">⌂</span><span data-i18n="home">Home</span></button>
   <button data-tab="schedule"><span class="ic" aria-hidden="true">▦</span><span data-i18n="schedule">Schedule</span></button>
   <button data-tab="stay"><span class="ic" aria-hidden="true">☾</span><span data-i18n="stay">Stay</span></button>
+  <button data-tab="guests"><span class="ic" aria-hidden="true">☺</span><span data-i18n="guestsTab">Guests</span></button>
   <button data-tab="tasks"><span class="ic" aria-hidden="true">✓</span><span data-i18n="tasks">Tasks</span></button>
 </nav>
 <script src="https://cdn.jsdelivr.net/npm/amazon-cognito-identity-js@6.3.12/dist/amazon-cognito-identity.min.js"></script>

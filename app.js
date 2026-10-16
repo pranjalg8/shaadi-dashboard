@@ -2,10 +2,11 @@
 const $ = (id) => document.getElementById(id);
 const C = window.CFG;
 const pool = new AmazonCognitoIdentity.CognitoUserPool({ UserPoolId: C.userPoolId, ClientId: C.clientId });
-const TABS = ["home", "schedule", "stay", "tasks"];
+const TABS = ["home", "schedule", "stay", "guests", "tasks"];
 const NEXT = { todo: "doing", doing: "done", done: "todo" };
 let pendingUser = null, plan = null, tasks = [], editing = false, showDone = false;
 let tab = "home", who = "All", fn = "All", me = "";
+let guests = [], gtab = "confirmed", gq = "", ggr = "All";
 const today = new Date(new Date().toDateString());
 
 const store = {
@@ -28,7 +29,10 @@ const UI = {
     roomsNeed: "Rooms we need", gettingAround: "Getting around (14 & 15 Feb)", alsoSort: "Also to sort",
     loadFail: "Could not load the plan: ", saveFail: "Could not save that change: ", updated: "{n} tasks · updated {t}",
     pinPrompt: "Enter the PIN to edit tasks", pinBad: "That PIN is not right.", unlock: "Unlock editing", cancel: "Cancel",
-    signInTitle: "Family sign-in", email: "Email", password: "Password", signIn: "Sign in", newPw: "Choose a new password (8+ characters)", firstSignIn: "First sign-in: choose your own password.", signInFail: "Sign-in failed." },
+    signInTitle: "Family sign-in", email: "Email", password: "Password", signIn: "Sign in", newPw: "Choose a new password (8+ characters)", firstSignIn: "First sign-in: choose your own password.", signInFail: "Sign-in failed.",
+    guestsTab: "Guests", gConfirmed: "Confirmed", gReconsider: "Reconsider", gSearch: "Search name or place", gGroup: "Group", gAllGroups: "All groups",
+    gFamilies: "{n} families", gPeople: "{n} people", gNone: "No guest list has been loaded yet.", gMoveR: "Move to Reconsider", gMoveC: "Move to Confirmed",
+    gRoomsIn: "{n} rooms in the hotels", gRoomsOut: "{n} rooms outside", gNoMatch: "No one matches.", gPriority: "Priority {n}", gUngrouped: "Not grouped", gOldList: "From the old list, not in the shortlist", },
   hi: { home: "होम", schedule: "कार्यक्रम", stay: "ठहरना", tasks: "काम", edit: "बदलें", doneEditing: "बदलना पूरा", signOut: "साइन आउट", lang: "English",
     status_todo: "करना है", status_doing: "चल रहा है", status_done: "पूरा हुआ",
     daysToGo: "दिन बाकी", functionsStart: "कार्यक्रम शुरू", tasksDone: "{m} में से {n} काम पूरे", whoLooking: "कौन देख रहा है?",
@@ -41,7 +45,10 @@ const UI = {
     roomsNeed: "हमें कितने कमरे चाहिए", gettingAround: "आना-जाना (14 और 15 फ़रवरी)", alsoSort: "और भी तय करना है",
     loadFail: "योजना लोड नहीं हो सकी: ", saveFail: "बदलाव सेव नहीं हो सका: ", updated: "{n} काम · अपडेट {t}",
     pinPrompt: "काम बदलने के लिए पिन डालें", pinBad: "पिन सही नहीं है।", unlock: "बदलना शुरू करें", cancel: "रद्द करें",
-    signInTitle: "परिवार साइन-इन", email: "ईमेल", password: "पासवर्ड", signIn: "साइन इन करें", newPw: "नया पासवर्ड चुनें (कम से कम 8 अक्षर)", firstSignIn: "पहली बार साइन-इन: अपना पासवर्ड चुनें।", signInFail: "साइन-इन नहीं हो सका।" },
+    signInTitle: "परिवार साइन-इन", email: "ईमेल", password: "पासवर्ड", signIn: "साइन इन करें", newPw: "नया पासवर्ड चुनें (कम से कम 8 अक्षर)", firstSignIn: "पहली बार साइन-इन: अपना पासवर्ड चुनें।", signInFail: "साइन-इन नहीं हो सका।",
+    guestsTab: "मेहमान", gConfirmed: "पक्के", gReconsider: "दोबारा सोचना", gSearch: "नाम या जगह खोजें", gGroup: "समूह", gAllGroups: "सभी समूह",
+    gFamilies: "{n} परिवार", gPeople: "{n} लोग", gNone: "मेहमानों की सूची अभी लोड नहीं हुई।", gMoveR: "दोबारा सोचने वाली सूची में डालें", gMoveC: "पक्की सूची में डालें",
+    gRoomsIn: "होटल में {n} कमरे", gRoomsOut: "बाहर {n} कमरे", gNoMatch: "कोई नहीं मिला।", gPriority: "प्राथमिकता {n}", gUngrouped: "बिना समूह", gOldList: "पुरानी सूची से, शॉर्टलिस्ट में नहीं", },
 };
 let lang = store.get("lang") === "hi" ? "hi" : "en";
 const T = (k, v = {}) => (UI[lang][k] ?? UI.en[k] ?? k).replace(/\{(\w+)\}/g, (_, x) => v[x] ?? "");
@@ -109,11 +116,16 @@ async function load() {
     plan = p.data;
     if (!plan || !Array.isArray(plan.days) || !plan.stay) throw new Error("the plan is incomplete (it has: " + Object.keys(plan || {}).join(", ") + ")");
     tasks = t.map((x) => ({ owner: "Unassigned", due: "2027-02-13", status: "todo", event: "General", ...x.data }));
+    try { guests = (await listAll("shaadi_guests")).map((x) => ({ status: "confirmed", qty: 0, ...x.data, id: x.id })); } catch { guests = []; }
     $("status").textContent = T("updated", { n: tasks.length, t: new Date().toLocaleTimeString(loc(), { hour: "2-digit", minute: "2-digit" }) });
     render();
   } catch (e) {
     $("derr").textContent = T("loadFail") + e.message; show($("derr"), true);
   }
+}
+async function saveGuest(g) {
+  try { await api("PUT", `/collections/shaadi_guests/items/${encodeURIComponent(g.id)}`, g); }
+  catch (e) { $("derr").textContent = T("saveFail") + e.message; show($("derr"), true); await load(); }
 }
 async function saveTask(t) {
   try { await api("PUT", `/collections/shaadi_tasks/items/${encodeURIComponent(t.id)}`, t); }
@@ -199,9 +211,48 @@ function tasksView() {
     ${done.length ? `<button class="btn" data-done="1">${T(showDone ? "hideDone" : "showDone", { n: done.length })}</button>${showDone ? `<div class="card flat" style="margin-top:12px">${done.map((t) => taskRow(t)).join("")}</div>` : ""}` : ""}`;
 }
 
+
+function guestRow(g) {
+  const reco = g.status === "reconsider";
+  const meta = [g.relation, g.location].filter(Boolean).map(esc).join(" · ");
+  const tags = [g.priority ? T("gPriority", { n: g.priority }) : "", reco ? "" : (g.rooms_in ? T("gRoomsIn", { n: g.rooms_in }) : "")].filter(Boolean)
+    .map((x) => `<span class="tag" style="margin-right:6px">${esc(x)}</span>`).join("");
+  const move = editing ? `<div class="owner"><button class="btn small" data-gmove="${esc(g.id)}">${T(reco ? "gMoveC" : "gMoveR")}</button></div>` : "";
+  return `<div class="task"><div class="body"><div class="title">${esc(g.name)}</div>${meta ? `<div class="meta">${meta}</div>` : ""}
+    ${g.members ? `<div class="meta">${esc(g.members)}</div>` : ""}${tags ? `<div>${tags}</div>` : ""}${move}</div>
+    <div class="qty"><b>${g.qty || "–"}</b><span>${g.qty === 1 ? "person" : lang === "hi" ? "लोग" : "people"}</span></div></div>`;
+}
+function guestsList() {
+  const q = gq.trim().toLowerCase();
+  const pick = guests.filter((g) => (gtab === "reconsider") === (g.status === "reconsider") && (ggr === "All" || (g.group || T("gUngrouped")) === ggr)
+    && (!q || [g.name, g.location, g.relation, g.members].some((x) => (x || "").toLowerCase().includes(q))));
+  if (!pick.length) return `<div class="card empty">${T("gNoMatch")}</div>`;
+  const groups = new Map();
+  for (const g of pick.sort((a, b) => (a.priority || 9) - (b.priority || 9) || a.name.localeCompare(b.name))) {
+    const k = g.group || (gtab === "reconsider" ? (g.relation || T("gUngrouped")) : T("gUngrouped"));
+    (groups.get(k) || groups.set(k, []).get(k)).push(g);
+  }
+  const people = pick.reduce((s, g) => s + (g.qty || 0), 0);
+  return `<p class="mut small" style="margin:12px 0 0">${T("gFamilies", { n: pick.length })} · ${T("gPeople", { n: people })}${gtab === "confirmed" ? " · " + T("gRoomsIn", { n: pick.reduce((s, g) => s + (g.rooms_in || 0), 0) }) + (pick.some((g) => g.rooms_out) ? " · " + T("gRoomsOut", { n: pick.reduce((s, g) => s + (g.rooms_out || 0), 0) }) : "") : ""}</p>`
+    + [...groups].map(([k, gs]) => `<div class="group">${esc(k)} · ${gs.length}</div><div class="card flat">${gs.map(guestRow).join("")}</div>`).join("");
+}
+function guestsView() {
+  if (!guests.length) return `<div class="card empty">${T("gNone")}</div>`;
+  const c = guests.filter((g) => g.status !== "reconsider"), r = guests.filter((g) => g.status === "reconsider");
+  const ppl = (l) => l.reduce((s, g) => s + (g.qty || 0), 0);
+  const groupNames = ["All", ...new Set(guests.filter((g) => (gtab === "reconsider") === (g.status === "reconsider")).map((g) => g.group || T("gUngrouped")))];
+  if (!groupNames.includes(ggr)) ggr = "All";
+  const stat = (key, n, p, on) => `<button class="pill ${on ? "on" : ""}" data-gtab="${key}" style="flex:1;text-align:left;padding:10px 14px;border-radius:14px"><div>${T(key === "confirmed" ? "gConfirmed" : "gReconsider")}</div><div style="font-weight:700;font-size:1.3rem">${p}</div><div class="small" style="font-weight:400">${T("gFamilies", { n })}</div></button>`;
+  return `<div class="card" style="padding:12px"><div class="row" style="display:flex;gap:8px">${stat("confirmed", c.length, ppl(c), gtab === "confirmed")}${stat("reconsider", r.length, ppl(r), gtab === "reconsider")}</div></div>
+    ${gtab === "reconsider" ? `<p class="mut small" style="margin:0 0 8px">${T("gOldList")}</p>` : ""}
+    <div class="filters"><input id="gq" type="search" placeholder="${esc(T("gSearch"))}" value="${esc(gq)}" aria-label="${esc(T("gSearch"))}" autocomplete="off">
+    <label class="small" style="margin:0" for="ggsel">${T("gGroup")}</label><select id="ggsel">${groupNames.map((n) => `<option value="${esc(n)}" ${n === ggr ? "selected" : ""}>${n === "All" ? T("gAllGroups") : esc(n)}</option>`).join("")}</select></div>
+    <div id="glist">${guestsList()}</div>`;
+}
+
 function render() {
   if (!plan) return;
-  $("view").innerHTML = { home, schedule, stay, tasks: tasksView }[tab]();
+  $("view").innerHTML = { home, schedule, stay, guests: guestsView, tasks: tasksView }[tab]();
   document.querySelectorAll("nav button").forEach((b) => (b.dataset.tab === tab ? b.setAttribute("aria-current", "page") : b.removeAttribute("aria-current")));
   $("edit").textContent = editing ? T("doneEditing") : T("edit");
   applyStatic();
@@ -214,6 +265,8 @@ document.addEventListener("click", (e) => {
   const b = e.target.closest("button"); if (!b || !plan) return;
   const d = b.dataset;
   if (d.tab) return go(d.tab);
+  if (d.gtab) { gtab = d.gtab; ggr = "All"; return render(); }
+  if (d.gmove) { const g = guests.find((x) => x.id === d.gmove); if (g) { g.status = g.status === "reconsider" ? "confirmed" : "reconsider"; saveGuest(g); render(); } return; }
   if (d.me !== undefined) { me = d.me; store.set("me", me); return render(); }
   if (d.cycle) { const t = tasks.find((x) => String(x.id) === d.cycle); if (t) { t.status = NEXT[t.status]; saveTask(t); render(); } return; }
   if (d.done) { showDone = !showDone; return render(); }
@@ -223,8 +276,10 @@ document.addEventListener("click", (e) => {
 document.addEventListener("change", (e) => {
   const s = e.target;
   if (s.id === "fnsel") { fn = s.value; return render(); }
+  if (s.id === "ggsel") { ggr = s.value; return render(); }
   if (s.dataset.owner) { const t = tasks.find((x) => String(x.id) === s.dataset.owner); if (t) { t.owner = s.value; saveTask(t); render(); } }
 });
+document.addEventListener("input", (e) => { if (e.target.id === "gq") { gq = e.target.value; $("glist").innerHTML = guestsList(); } });
 async function sha(text) {
   const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
   return [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, "0")).join("");
