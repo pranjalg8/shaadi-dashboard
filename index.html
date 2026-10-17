@@ -115,7 +115,7 @@ input{width:100%;min-height:48px;padding:0 12px;border:1px solid var(--line);bor
   <form id="lf" class="card">
     <label data-i18n="email" for="em">Email</label><input id="em" type="email" autocomplete="username" required>
     <label data-i18n="password" for="pw">Password</label><input id="pw" type="password" autocomplete="current-password" required>
-    <div id="np" hidden><label data-i18n="newPw" for="pw2">Choose a new password (8+ characters)</label><input id="pw2" type="password" autocomplete="new-password" minlength="8"></div>
+    <div id="np" hidden><label data-i18n="newPw" for="pw2">Choose a new password (12+ characters, with capital, small letter and a number)</label><input id="pw2" type="password" autocomplete="new-password" minlength="12"></div>
     <p class="err" id="lerr" role="alert" hidden></p>
     <p><button class="btn primary" id="lb" style="width:100%" data-i18n="signIn">Sign in</button></p>
   </form>
